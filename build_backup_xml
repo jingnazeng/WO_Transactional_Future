@@ -1,0 +1,208 @@
+<project name="contlib" basedir="." default="main-all">
+	<taskdef resource="net/sf/antcontrib/antlib.xml"/>
+	<property name="src.dir"	value="src"/>
+	<property name="build.dir"	value="build"/>
+	<property name="classes.dir"	value="${build.dir}"/>
+	<property name="dist.dir"	value="dist"/>
+	<property name="jar.file"	value="contlib.jar"/>
+	<property name="libs.dir"	value="libs"/>
+	
+	<property name="jvstmsrc.dir"	value="src/jvstm"/>
+	<property name="jvstmbuild.dir"	value="jvstmbuild"/>
+	<property name="jvstmclasses.dir"	value="${jvstmbuild.dir}"/>
+	<property name="jvstmdist.dir"	value="jvstmdist"/>
+	<property name="jvstmjar.file"	value="jvstm.jar"/>
+	
+	<property name="iterator"	value="4"/>
+	<property name="execution"	value="1"/>
+	
+	
+	<property name="nThreads"	value="1 2 4 8"/>
+	<property name="nFutures"	value="2 4 8 10"/>
+	<property name="iterations"	value="1"/>
+	
+	
+
+	<target name="clean">
+		<delete dir="${build.dir}"/>
+		<delete dir="${dist.dir}"/>
+		<delete dir="${jvstmbuild.dir}"/>
+		<delete dir="${jvstmdist.dir}"/>
+	</target>
+
+	<target name="compile-all">
+		<mkdir dir="${classes.dir}"/>
+		<javac fork="true" srcdir="${src.dir}" destdir="${classes.dir}" debug="true"
+			deprecation="true" debuglevel="lines,vars,source" includeantruntime="false">
+			<classpath>  
+				<pathelement location="${jvstmdist.dir}/jvstm.jar"/>
+			</classpath>
+			<compilerarg value="-Xbootclasspath/p:${libs.dir}/contlib.jar:${libs.dir}/fastutil-6.5.15.jar"/>
+			<compilerarg value="-Xlint:unchecked"/>
+		</javac>
+	</target>
+
+	<target name="main-all" depends="clean,jvstmjar,compile-all,jar"/>
+
+	<target name="jar" depends="compile-all" description="Generates the jar">
+		<mkdir dir="${dist.dir}"/>
+		<jar destfile="${dist.dir}/${jar.file}" basedir="${build.dir}"/>
+	</target>
+	
+	<target name="compile-Test">
+		<mkdir dir="${classes.dir}"/>
+		<javac fork="true" srcdir="${src.dir}" destdir="${classes.dir}" debug="true" encoding="utf-8"
+			deprecation="true" debuglevel="lines,vars,source" includeantruntime="false">
+			<classpath>  
+				<pathelement location="${libs.dir}/advice-1.5.jar"/>
+				<pathelement location="${libs.dir}/asm-all-5.0_BETA.jar"/>
+				<pathelement location="${libs.dir}/Desktop/contlib.jar"/>
+				<pathelement location="${libs.dir}/fastutil-6.5.15.jar"/>
+			</classpath>
+			<compilerarg value="-Xbootclasspath/p:${libs.dir}/contlib.jar:${libs.dir}"/>
+			<compilerarg value="-Xlint:none"/>
+		</javac>
+	</target>
+
+	<target name="jvstmcompile">
+		<mkdir dir="${jvstmclasses.dir}"/>
+		<javac fork="true" srcdir="${jvstmsrc.dir}" destdir="${jvstmclasses.dir}" debug="true" encoding="utf-8"
+			deprecation="true" debuglevel="lines,vars,source" includeantruntime="false">
+			<classpath>  
+				<pathelement location="${libs.dir}/advice-1.5.jar"/>
+				<pathelement location="${libs.dir}/asm-all-5.0_BETA.jar"/>
+				<pathelement location="${libs.dir}/contlib.jar"/>
+				<pathelement location="${libs.dir}/fastutil-6.5.15.jar"/>
+			</classpath>
+			<compilerarg value="-Xlint:none"/>
+		</javac>
+	</target>
+	
+	<target name="jvstmjar" depends="jvstmcompile" description="Generates the jvstm jar">
+		<mkdir dir="${jvstmdist.dir}"/>
+		<jar destfile="${jvstmdist.dir}/${jvstmjar.file}" basedir="${jvstmbuild.dir}"/>
+	</target>
+	
+		
+	
+	
+	<!-- Micro BENCHMARKS -->
+	
+	<target name="TestAssertInterTx" depends="clean,compile-Test,jar">  
+	        <java fork="true" classname="contlib/AssertInterTX" >
+	        	<jvmarg  value="-Xbootclasspath/p:${dist.dir}/contlib.jar:${jvstmdist.dir}/jvstm.jar"/>
+	        </java>  
+	</target>
+	
+		<target name="TestAssertSingleTx" depends="clean,compile-Test,jar"> 
+	        <java fork="true" classname="contlib/AssertSingleTX" jvm="${libs.dir}/openjdk-continuation-vm2013-linux-amd64/bin/java">	
+	        	<jvmarg  value="-Xbootclasspath/p:${dist.dir}/contlib.jar:${jvstmdist.dir}/jvstm.jar"/>
+	        </java>  
+	</target>
+	
+	
+	
+	<!-- BENCHMARKS -->
+	
+	<target name="SequentialComparisonRBTReeReadOnlyTestDEBUG" depends="clean,compile-Test,jar"> 
+		<for list="${execution}" delimiter=" " param="exe" trim="false" parallel="false">
+			<sequential>
+		<for list="${iterator}" delimiter=" " param="word" trim="false" parallel="false">
+			<sequential>
+	       		<java fork="true" classname="contlib/RBTreeBenchmark/SequentialVersion/RBTreeReadOnlyTest" jvm="${libs.dir}/openjdk-continuation-vm2013-linux-amd64/bin/java">
+		        	<jvmarg  value="-Xmx6G" />
+	       			<jvmarg  value="-Xms6G" />
+	       			<jvmarg  value="-XX:+AggressiveOpts" />
+	       			<jvmarg  value="-XX:+UseConcMarkSweepGC" />
+	       			<jvmarg  value="-Xshare:off" />
+		        	<jvmarg  value="-Xbootclasspath/p:${dist.dir}/contlib.jar:${jvstmdist.dir}/jvstm.jar:${libs.dir}/opencsv-2.3.jar"/>
+	       			<arg value="1"/>
+	       			<arg value="@{word}"/>
+	       			<arg value="1"/>
+	       			<arg value="@{exe}"/>
+	       		</java> 
+	       	</sequential>
+		</for>
+		</sequential>
+		</for> 
+	</target>
+	
+	<target name="SequentialComparisonRBTReeReadOnlyTest" depends="clean,compile-Test,jar"> 
+		<for list="${nFutures}" delimiter=" " param="future" trim="false" parallel="false">
+		<sequential>
+			<for list="${iterations}" delimiter=" " param="iteration" trim="false" parallel="false">
+			<sequential>
+		       		<java fork="true" classname="contlib/RBTreeBenchmark/SequentialVersion/RBTreeReadOnlyTest" jvm="${libs.dir}/openjdk-continuation-vm2013-linux-amd64/bin/java" >
+			        	<jvmarg  value="-Xmx3G" />
+		       			<jvmarg  value="-Xms3G" />
+		       			<jvmarg  value="-XX:+AggressiveOpts" />
+		       			<jvmarg  value="-XX:+UseConcMarkSweepGC" />
+		       			<jvmarg  value="-Xshare:off" />
+					<jvmarg  value="-Xbootclasspath/p:${dist.dir}/contlib.jar:${jvstmdist.dir}/jvstm.jar:${libs.dir}"/>
+		       			<arg value="1"/>
+		       			<arg value="@{future}"/>
+		       			<arg value="1"/>
+					<arg value="@{iteration}"/>
+		       		</java>
+			</sequential>
+			</for>			
+	       	</sequential>
+		</for> 
+	</target>
+	
+
+
+	<target name="SequentialComparisonRBTReeReadWriteTestDEBUG" depends="clean,compile-Test,jar"> 
+		<for list="${execution}" delimiter=" " param="exe" trim="false" parallel="false">
+			<sequential>
+		<for list="${iterator}" delimiter=" " param="word" trim="false" parallel="false">
+			<sequential>
+	       		<java fork="true" classname="contlib/RBTreeBenchmark/SequentialVersion/RBTreeReadWriteTest" jvm="${libs.dir}/openjdk-continuation-vm2013-linux-amd64/bin/java">
+		        	<jvmarg  value="-Xmx6G" />
+	       			<jvmarg  value="-Xms6G" />
+	       			<jvmarg  value="-XX:+AggressiveOpts" />
+	       			<jvmarg  value="-XX:+UseConcMarkSweepGC" />
+	       			<jvmarg  value="-Xshare:off" />
+		        	<jvmarg  value="-Xbootclasspath/p:${dist.dir}/contlib.jar:${jvstmdist.dir}/jvstm.jar:${libs.dir}/opencsv-2.3.jar"/>
+	       			<arg value="2"/>
+	       			<arg value="@{word}"/>
+	       			<arg value="2"/>
+	       			<arg value="@{exe}"/>
+	       		</java> 
+	       	</sequential>
+		</for>
+		</sequential>
+		</for> 
+	</target>
+	
+
+	<target name="SequentialComparisonRBTReeReadWriteTest" depends="clean,compile-Test,jar">
+		<for list="${nThreads}" delimiter=" " param="nthreads" trim="false" parallel="false">
+		<sequential>
+			<for list="${nFutures}" delimiter=" " param="future" trim="false" parallel="false">
+			<sequential>
+				<for list="${iterations}" delimiter=" " param="iteration" trim="false" parallel="false">
+				<sequential>
+			       		<java fork="true" classname="contlib/RBTreeBenchmark/SequentialVersion/RBTreeReadWriteTest" jvm="${libs.dir}/openjdk-continuation-vm2013-linux-amd64/bin/java" >
+			       			<jvmarg  value="-Xmx6G" />
+			       			<jvmarg  value="-Xms6G" />
+			       			<jvmarg  value="-XX:+AggressiveOpts" />
+			       			<jvmarg  value="-XX:+UseConcMarkSweepGC" />
+			       			<jvmarg  value="-Xshare:off" />
+						<jvmarg  value="-Xbootclasspath/p:${dist.dir}/contlib.jar:${jvstmdist.dir}/jvstm.jar:${libs.dir}"/>
+			       			<arg value="@{nthreads}"/>
+			       			<arg value="@{future}"/>
+			       			<arg value="10"/>
+						<arg value="@{iteration}"/>
+			       		</java>
+				</sequential>
+				</for>			
+		       	</sequential>
+			</for>
+	    </sequential>
+		</for> 
+	</target>
+
+
+
+</project>

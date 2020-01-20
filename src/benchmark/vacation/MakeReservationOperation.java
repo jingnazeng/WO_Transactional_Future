@@ -243,6 +243,55 @@ public class MakeReservationOperation extends Operation {
 	    manager.manager_reserveRoom(customerId, maxIds[Definitions.RESERVATION_ROOM]);
 	}
     }
+    
+    
+    
+    private void makeReservation(boolean readOnly, boolean streamline) throws Throwable {
+	boolean isFound = false;
+	boolean isFoundinContinuation = false;
+
+	int queriesPerTx = numQuery / Operation.numberOfTransactionalFuture ;
+	  
+	  FutureRepresentation<Boolean> f = ((ReadWriteTransaction)Transaction.current()).
+				submitWeakOrderingFuture(new WeakFutureTask(new AsyncOperation(0, queriesPerTx)));
+		List<FutureRepresentation<Boolean>> submittedFutures = new ArrayList<FutureRepresentation<Boolean>>();
+		submittedFutures.add(f);
+		while(true){
+			try{
+				executeFutCont(Operation.numberOfTransactionalFuture-1, submittedFutures);
+				//System.out.println(String.format("number of submiited futures is %d from %d siblings"
+				//submittedFutures.size(), sibling));
+				for (FutureRepresentation<Boolean> submittedFuture : submittedFutures){
+					isFound = (Boolean) Transaction.current().evalWeakOrderingFuture(submittedFuture);
+					if(isFound = true)
+						break;
+				}
+				break;
+			}catch(Throwable e){
+				if(e.getCause() instanceof EarlyAbortException || e instanceof EarlyAbortException)
+					throw e;
+				else{
+					e.printStackTrace();
+					System.out.println("continuation restarting");
+				}
+			}
+		}
+	  
+
+
+	if (isFound) {
+	    manager.manager_addCustomer(customerId);
+	}
+	if (maxIds[Definitions.RESERVATION_CAR] > 0) {
+	    manager.manager_reserveCar(customerId, maxIds[Definitions.RESERVATION_CAR]);
+	}
+	if (maxIds[Definitions.RESERVATION_FLIGHT] > 0) {
+	    manager.manager_reserveFlight(customerId, maxIds[Definitions.RESERVATION_FLIGHT]);
+	}
+	if (maxIds[Definitions.RESERVATION_ROOM] > 0) {
+	    manager.manager_reserveRoom(customerId, maxIds[Definitions.RESERVATION_ROOM]);
+	}
+    }
 
     private void makeReservation(boolean readOnly) throws Throwable {
 	boolean isFound = false;

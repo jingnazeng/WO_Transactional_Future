@@ -1,0 +1,16 @@
+/ChainedIterator.class
+/ConsistencyCheckTransaction.class
+/ConsistencyException.class
+/ConsistencyPredicate.class
+/ConsistencyPredicateSystem.class
+/ConsistentNestedTransaction.class
+/ConsistentTopLevelTransaction$Pair.class
+/ConsistentTopLevelTransaction.class
+/ConsistentTransaction.class
+/ConsistentTransactionFactory.class
+/DefaultConsistencyCheckTransaction.class
+/DefaultDependenceRecord.class
+/Depended.class
+/DependedVBoxes$DependedState.class
+/DependedVBoxes.class
+/DependenceRecord.class
